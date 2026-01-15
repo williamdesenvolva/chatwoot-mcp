@@ -2,13 +2,17 @@
 import 'dotenv/config';
 import http from 'http';
 import { ChatwootClient } from './shared/api-client.js';
+// Admin panel imports
+import { handleAdminRoute, tokenService, auditService, initializeDatabase } from './admin/index.js';
 const client = new ChatwootClient();
-// API Key para autenticação
-const API_KEY = process.env.MCP_API_KEY || 'chatwoot-mcp-secret-key';
+// Legacy API Key for backward compatibility
+const LEGACY_API_KEY = process.env.MCP_API_KEY || 'chatwoot-mcp-secret-key';
 // CORS - origens permitidas (separadas por vírgula)
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '*').split(',').map(s => s.trim());
-// Rate limiting map
+// Rate limiting map (per token/IP)
 const rateLimitMap = new Map();
+// Flag to track if database is initialized
+let dbInitialized = false;
 const server = http.createServer(async (req, res) => {
     // CORS headers
     const origin = req.headers.origin || '*';
@@ -22,18 +26,52 @@ const server = http.createServer(async (req, res) => {
         res.end();
         return;
     }
-    // Verificar API Key (exceto para health check)
+    // Parse URL
     const authUrl = new URL(req.url || '/', `http://${req.headers.host}`);
+    // Handle admin routes first
+    if (authUrl.pathname.startsWith('/admin')) {
+        let adminBody = {};
+        if (req.method !== 'GET' && req.method !== 'DELETE') {
+            adminBody = await parseBody(req);
+        }
+        const handled = await handleAdminRoute(req, res, authUrl.pathname, adminBody);
+        if (handled)
+            return;
+    }
+    // Get client info for audit logging
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0] ||
+        req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'];
+    // Token validation context
+    let tokenId;
+    let tokenPermissions;
+    // Verificar API Key (exceto para health check)
     if (authUrl.pathname !== '/' && authUrl.pathname !== '/health') {
         const apiKey = req.headers['x-api-key'];
-        if (apiKey !== API_KEY) {
+        // Validate token (supports both legacy and database tokens)
+        const validation = await tokenService.validateApiToken(apiKey);
+        if (!validation.valid) {
             res.writeHead(401);
-            res.end(JSON.stringify({ error: 'Unauthorized', message: 'Invalid or missing X-API-Key header' }));
+            res.end(JSON.stringify({ error: 'Unauthorized', message: validation.error || 'Invalid or missing X-API-Key header' }));
             return;
         }
+        // Check endpoint permission
+        const permission = tokenService.getPermissionForEndpoint(req.method || 'GET', authUrl.pathname);
+        if (permission && validation.permissions) {
+            const hasPermission = tokenService.hasPermission(validation.permissions, permission.category, permission.action);
+            if (!hasPermission) {
+                res.writeHead(403);
+                res.end(JSON.stringify({
+                    error: 'Forbidden',
+                    message: `Token lacks ${permission.action} permission for ${permission.category}`
+                }));
+                return;
+            }
+        }
+        tokenId = validation.tokenId;
+        tokenPermissions = validation.permissions;
     }
     // Rate limiting simples (por IP)
-    const clientIp = req.socket.remoteAddress || 'unknown';
     const now = Date.now();
     if (!rateLimitMap.has(clientIp)) {
         rateLimitMap.set(clientIp, { count: 0, resetTime: now + 60000 });
@@ -692,11 +730,19 @@ const server = http.createServer(async (req, res) => {
         }
         res.writeHead(200);
         res.end(JSON.stringify(result, null, 2));
+        // Audit log (async, non-blocking)
+        if (tokenId) {
+            auditService.logApiRequest(tokenId, req.method || 'GET', path, 200, clientIp, userAgent).catch(console.error);
+        }
     }
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         res.writeHead(500);
         res.end(JSON.stringify({ error: message }));
+        // Audit log error (async, non-blocking)
+        if (tokenId) {
+            auditService.logApiRequest(tokenId, req.method || 'GET', path, 500, clientIp, userAgent, { error: message }).catch(console.error);
+        }
     }
 });
 function parseBody(req) {
@@ -715,8 +761,29 @@ function parseBody(req) {
     });
 }
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-    console.log(`🚀 Chatwoot MCP HTTP Server running on http://localhost:${PORT}`);
-    console.log(`📚 Endpoints disponíveis em GET /`);
-});
+// Initialize database and start server
+async function startServer() {
+    try {
+        // Try to initialize database (optional - server works without it)
+        if (process.env.DATABASE_URL) {
+            console.log('[DB] Connecting to PostgreSQL...');
+            await initializeDatabase();
+            dbInitialized = true;
+            console.log('[DB] Database ready');
+        }
+        else {
+            console.log('[DB] DATABASE_URL not set - using legacy API key only');
+        }
+    }
+    catch (error) {
+        console.error('[DB] Failed to initialize database:', error);
+        console.log('[DB] Server will run with legacy API key only');
+    }
+    server.listen(PORT, () => {
+        console.log(`🚀 Chatwoot MCP HTTP Server running on http://localhost:${PORT}`);
+        console.log(`📚 API Endpoints: GET /`);
+        console.log(`🔧 Admin Panel: http://localhost:${PORT}/admin`);
+    });
+}
+startServer();
 //# sourceMappingURL=http-server.js.map
