@@ -1,0 +1,57 @@
+services:
+  mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chatwoot-mcp
+    restart: unless-stopped
+    ports:
+      - "3002:3001"
+    environment:
+      - CHATWOOT_API_URL=http://chatwoot-rails:3000
+      - CHATWOOT_API_KEY=${CHATWOOT_API_KEY:-u4oGsvR1TLjLCMNn5ETBcF8r}
+      - CHATWOOT_ACCOUNT_ID=${CHATWOOT_ACCOUNT_ID:-1}
+      - MCP_API_KEY=${MCP_API_KEY:-chatwoot-mcp-2026-secure-key}
+      - CORS_ORIGINS=http://72.61.43.177:3000,http://chat.desenvolva.tech
+      - PORT=3001
+      # Admin Panel Database
+      - DATABASE_URL=postgresql://mcp:${MCP_DB_PASSWORD:-mcp123secure}@mcp-postgres:5432/mcp_admin
+      - MASTER_USER_EMAIL=admin@desenvolva.io
+      - MASTER_USER_PASSWORD=${MASTER_USER_PASSWORD:-Admin@DesenvolvaIO2026}
+      - ADMIN_SESSION_EXPIRY=24
+    depends_on:
+      mcp-postgres:
+        condition: service_healthy
+    networks:
+      - chatwoot_default
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  mcp-postgres:
+    image: postgres:15-alpine
+    container_name: mcp-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=mcp
+      - POSTGRES_PASSWORD=${MCP_DB_PASSWORD:-mcp123secure}
+      - POSTGRES_DB=mcp_admin
+    volumes:
+      - mcp_postgres_data:/var/lib/postgresql/data
+    networks:
+      - chatwoot_default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mcp -d mcp_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mcp_postgres_data:
+
+networks:
+  chatwoot_default:
+    external: true
