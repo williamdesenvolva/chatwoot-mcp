@@ -70,6 +70,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 result = await client.get(client.accountPath(`/specialists/${specialistId}/available_slots`), params);
                 break;
             }
+            // Appointment Attachments
+            case 'list_appointment_attachments': {
+                const appointmentId = args?.appointment_id;
+                result = await client.get(client.accountPath(`/appointments/${appointmentId}/attachments`));
+                break;
+            }
+            case 'get_appointment_attachment': {
+                const appointmentId = args?.appointment_id;
+                const attachmentId = args?.attachment_id;
+                result = await client.get(client.accountPath(`/appointments/${appointmentId}/attachments/${attachmentId}`));
+                break;
+            }
+            case 'delete_appointment_attachment': {
+                const appointmentId = args?.appointment_id;
+                const attachmentId = args?.attachment_id;
+                await client.delete(client.accountPath(`/appointments/${appointmentId}/attachments/${attachmentId}`));
+                result = { success: true, message: `Attachment ${attachmentId} deleted from appointment ${appointmentId}` };
+                break;
+            }
+            case 'download_appointment_attachment': {
+                const appointmentId = args?.appointment_id;
+                const attachmentId = args?.attachment_id;
+                // Get the attachment details which includes the download URL
+                const attachment = await client.get(client.accountPath(`/appointments/${appointmentId}/attachments/${attachmentId}`));
+                result = {
+                    attachment_id: attachment.id,
+                    file_name: attachment.file_name,
+                    file_type: attachment.file_type,
+                    file_size: attachment.file_size,
+                    download_url: attachment.download_url,
+                    file_url: attachment.file_url,
+                };
+                break;
+            }
+            case 'upload_appointment_attachment': {
+                // Note: File uploads via stdio are limited. Use HTTP API for full support.
+                result = {
+                    error: true,
+                    message: 'File uploads are best handled via the HTTP API server (http-server.ts). For stdio transport, use the HTTP endpoint POST /appointments/:id/attachments with multipart/form-data.',
+                    suggestion: 'Start the HTTP server with: npm start, then POST to http://localhost:3001/mcp with the upload_appointment_attachment tool.',
+                };
+                break;
+            }
             default:
                 throw new Error(`Unknown tool: ${name}`);
         }

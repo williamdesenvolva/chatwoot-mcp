@@ -50,43 +50,43 @@ export default function AuditPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Audit Logs</h1>
+      <h1 className="text-2xl font-display font-bold text-slate-800 mb-6">Audit Logs</h1>
 
       {/* Filters */}
-      <form onSubmit={handleSearch} className="bg-white rounded-lg shadow p-4 mb-6">
+      <form onSubmit={handleSearch} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Action</label>
             <input
               type="text"
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand transition-colors"
               placeholder="e.g., auth.login"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">From Date</label>
             <input
               type="date"
               value={filterFromDate}
               onChange={(e) => setFilterFromDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">To Date</label>
             <input
               type="date"
               value={filterToDate}
               onChange={(e) => setFilterToDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-brand transition-colors"
             />
           </div>
           <div className="flex items-end">
             <button
               type="submit"
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="w-full px-4 py-2.5 bg-brand text-dark font-semibold rounded-lg hover:bg-brand-light transition-colors"
             >
               Search
             </button>
@@ -95,75 +95,75 @@ export default function AuditPage() {
       </form>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
           {error}
         </div>
       )}
 
       {/* Logs Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Path</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Method</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Path</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">IP</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-slate-200">
                   {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                         {formatDate(log.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">{log.action}</code>
+                        <code className="bg-slate-100 px-2 py-1 rounded text-xs font-mono">{log.action}</code>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {log.request_method && (
-                          <span className={`px-2 py-1 text-xs rounded font-mono ${
-                            log.request_method === 'GET' ? 'bg-green-100 text-green-800' :
-                            log.request_method === 'POST' ? 'bg-blue-100 text-blue-800' :
-                            log.request_method === 'PATCH' ? 'bg-yellow-100 text-yellow-800' :
-                            log.request_method === 'DELETE' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
+                          <span className={`px-2 py-1 text-xs rounded-full font-mono font-medium ${
+                            log.request_method === 'GET' ? 'bg-brand/10 text-brand-dark' :
+                            log.request_method === 'POST' ? 'bg-primary-100 text-primary-700' :
+                            log.request_method === 'PATCH' ? 'bg-amber-100 text-amber-700' :
+                            log.request_method === 'DELETE' ? 'bg-red-100 text-red-700' :
+                            'bg-slate-100 text-slate-700'
                           }`}>
                             {log.request_method}
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
                         {log.request_path || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {log.response_status && (
-                          <span className={`px-2 py-1 text-xs rounded ${
-                            log.response_status < 400 ? 'bg-green-100 text-green-800' :
-                            log.response_status < 500 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            log.response_status < 400 ? 'bg-brand/10 text-brand-dark' :
+                            log.response_status < 500 ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-700'
                           }`}>
                             {log.response_status}
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                         {log.ip_address || '-'}
                       </td>
                     </tr>
                   ))}
                   {logs.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                         No audit logs found
                       </td>
                     </tr>
@@ -174,22 +174,22 @@ export default function AuditPage() {
 
             {/* Pagination */}
             {pagination.total_pages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+              <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <div className="text-sm text-slate-500">
                   Showing page {pagination.page} of {pagination.total_pages} ({pagination.total} total)
                 </div>
                 <div className="space-x-2">
                   <button
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                     disabled={pagination.page <= 1}
-                    className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                     disabled={pagination.page >= pagination.total_pages}
-                    className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                    className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                   >
                     Next
                   </button>

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import FormData from 'form-data';
 import { getConfig, ChatwootConfig } from './config.js';
 
 export class ChatwootClient {
@@ -85,6 +86,21 @@ export class ChatwootClient {
   async delete<T>(path: string): Promise<T> {
     try {
       const response = await this.client.delete<T>(path);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  // Upload file using multipart/form-data
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    try {
+      const response = await this.client.post<T>(path, formData, {
+        headers: {
+          ...formData.getHeaders(),
+          'api_access_token': this.config.apiKey,
+        },
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

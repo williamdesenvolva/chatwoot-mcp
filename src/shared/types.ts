@@ -211,6 +211,41 @@ export interface AgentBot {
   account_id?: number;
 }
 
+// Waitlist types
+export interface AppointmentWaitlistEntry {
+  id: number;
+  specialist_id: number;
+  contact_id: number;
+  preferred_date?: string;
+  preferred_time_start?: string;
+  preferred_time_end?: string;
+  notes?: string;
+  status: 'pending' | 'notified' | 'accepted' | 'declined' | 'expired' | 'cancelled';
+  priority: number;
+  expires_at?: string;
+  notified_at?: string;
+  responded_at?: string;
+  specialist?: {
+    id: number;
+    name: string;
+  };
+  contact?: Contact;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WaitlistNotificationSetting {
+  id: number;
+  specialist_id: number;
+  enabled: boolean;
+  notification_template?: string;
+  response_timeout_hours: number;
+  max_notifications_per_slot: number;
+  auto_expire_hours: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // Pagination response wrapper
 export interface PaginatedResponse<T> {
   payload: T[];

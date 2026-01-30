@@ -99,4 +99,18 @@ export const api = {
 
   // Stats
   getStats: () => request<any>('/stats'),
+
+  // Tools
+  getTools: () => request<{ data: any[] }>('/tools'),
+
+  getTool: (name: string) => request<{ data: any }>(`/tools/${encodeURIComponent(name)}`),
+
+  updateTool: (name: string, data: { custom_description?: string | null; is_enabled?: boolean }) =>
+    request<{ data: any }>(`/tools/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  resetTool: (name: string) =>
+    request<{ success: boolean }>(`/tools/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 };

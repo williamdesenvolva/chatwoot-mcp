@@ -1,7 +1,12 @@
 import { tokenRepository } from '../database/repositories/token.repository.js';
 import { auditRepository } from '../database/repositories/audit.repository.js';
+import jwt from 'jsonwebtoken';
 // Legacy API key for backward compatibility
 const LEGACY_API_KEY = process.env.MCP_API_KEY;
+// Captain JWT token secret (same as Rails secret_key_base or MCP_TOKEN_SECRET)
+const MCP_TOKEN_SECRET = process.env.MCP_TOKEN_SECRET;
+// Skip token validation for local development (INSECURE)
+const SKIP_TOKEN_VALIDATION = process.env.SKIP_TOKEN_VALIDATION === 'true';
 // Endpoint to permission category mapping
 const ENDPOINT_PERMISSION_MAP = {
     // Contacts
@@ -84,9 +89,33 @@ const ENDPOINT_PERMISSION_MAP = {
     // CSAT
     'GET /csat_survey_responses': { category: 'csat', action: 'read' },
     'GET /csat_survey_responses/metrics': { category: 'csat', action: 'read' },
+    // Waitlist
+    'GET /appointment_waitlist_entries': { category: 'appointments', action: 'read' },
+    'POST /appointment_waitlist_entries': { category: 'appointments', action: 'write' },
+    'GET /appointment_waitlist_entries/:id': { category: 'appointments', action: 'read' },
+    'PATCH /appointment_waitlist_entries/:id': { category: 'appointments', action: 'write' },
+    'DELETE /appointment_waitlist_entries/:id': { category: 'appointments', action: 'delete' },
+    'POST /appointment_waitlist_entries/:id/accept': { category: 'appointments', action: 'write' },
+    'POST /appointment_waitlist_entries/:id/decline': { category: 'appointments', action: 'write' },
+    'GET /specialists/:id/waitlist_notification_setting': { category: 'specialists', action: 'read' },
+    'POST /specialists/:id/waitlist_notification_setting': { category: 'specialists', action: 'write' },
+    'PATCH /specialists/:id/waitlist_notification_setting': { category: 'specialists', action: 'write' },
+    'DELETE /specialists/:id/waitlist_notification_setting': { category: 'specialists', action: 'delete' },
+    // Specialists search
+    'GET /specialists/search': { category: 'specialists', action: 'read' },
 };
 export class TokenService {
     async validateApiToken(token) {
+        // Skip token validation for local development (INSECURE - dev only)
+        if (SKIP_TOKEN_VALIDATION) {
+            console.log('[AUTH] Token validation SKIPPED (SKIP_TOKEN_VALIDATION=true)');
+            return {
+                valid: true,
+                isLegacy: true,
+                permissions: this.getFullPermissions(),
+                rateLimit: 100,
+            };
+        }
         if (!token) {
             return { valid: false, error: 'Missing API token' };
         }
@@ -98,6 +127,27 @@ export class TokenService {
                 permissions: this.getFullPermissions(),
                 rateLimit: 100,
             };
+        }
+        // Check if it's a Captain JWT token (starts with eyJ)
+        if (MCP_TOKEN_SECRET && token.startsWith('eyJ')) {
+            try {
+                const decoded = jwt.verify(token, MCP_TOKEN_SECRET);
+                if (decoded.type === 'mcp_access' && decoded.account_id) {
+                    console.log(`[AUTH] Captain JWT validated for account ${decoded.account_id}, assistant ${decoded.assistant_id}`);
+                    return {
+                        valid: true,
+                        isLegacy: false,
+                        permissions: this.getFullPermissions(),
+                        rateLimit: 100,
+                        accountId: decoded.account_id,
+                        assistantId: decoded.assistant_id,
+                    };
+                }
+            }
+            catch (jwtError) {
+                console.error(`[AUTH] Captain JWT validation failed: ${jwtError.message}`);
+                // Fall through to try database validation
+            }
         }
         // Validate against database
         const apiToken = await tokenRepository.validateToken(token);

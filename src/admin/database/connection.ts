@@ -36,12 +36,18 @@ export async function initializeDatabase(): Promise<void> {
   try {
     console.log('[DB] Initializing database...');
 
-    // Read and execute migration
-    const migrationPath = path.join(__dirname, 'migrations', '001_initial.sql');
-    const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
+    // Read and execute migrations
+    const migrationsDir = path.join(__dirname, 'migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
 
-    await client.query(migrationSQL);
-    console.log('[DB] Migration 001_initial.sql executed successfully');
+    for (const migrationFile of migrationFiles) {
+      const migrationPath = path.join(migrationsDir, migrationFile);
+      const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
+      await client.query(migrationSQL);
+      console.log(`[DB] Migration ${migrationFile} executed successfully`);
+    }
 
     // Check if master user exists, if not create it
     const masterEmail = process.env.MASTER_USER_EMAIL || 'admin@desenvolva.io';

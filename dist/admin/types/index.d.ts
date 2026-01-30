@@ -158,8 +158,41 @@ export interface TokenValidation {
     permissions?: TokenPermissions;
     isLegacy?: boolean;
     rateLimit?: number;
+    accountId?: number;
+    assistantId?: number;
 }
 export declare const FULL_PERMISSIONS: TokenPermissions;
 export declare const READ_ONLY_PERMISSIONS: TokenPermissions;
 export declare const NO_PERMISSIONS: TokenPermissions;
+export interface ToolInstruction {
+    id: string;
+    tool_name: string;
+    custom_description: string | null;
+    is_enabled: boolean;
+    created_by: string | null;
+    updated_by: string | null;
+    created_at: Date;
+    updated_at: Date;
+}
+export interface ToolInstructionPublic {
+    id: string;
+    tool_name: string;
+    custom_description: string | null;
+    is_enabled: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+export interface UpsertToolInstructionRequest {
+    custom_description?: string | null;
+    is_enabled?: boolean;
+}
+export interface ToolWithInstruction {
+    name: string;
+    description: string;
+    default_description: string;
+    custom_description: string | null;
+    is_enabled: boolean;
+    has_custom_instruction: boolean;
+    inputSchema?: Record<string, any>;
+}
 //# sourceMappingURL=index.d.ts.map

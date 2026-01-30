@@ -87,3 +87,27 @@ export const PERMISSION_CATEGORIES = [
   'integrations',
   'csat',
 ] as const;
+
+export interface ToolWithInstruction {
+  name: string;
+  description: string;
+  default_description: string;
+  custom_description: string | null;
+  is_enabled: boolean;
+  has_custom_instruction: boolean;
+  inputSchema?: Record<string, any>;
+}
+
+export interface ToolInstructionPublic {
+  id: string;
+  tool_name: string;
+  custom_description: string | null;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpsertToolInstructionRequest {
+  custom_description?: string | null;
+  is_enabled?: boolean;
+}

@@ -1,3 +1,4 @@
+import FormData from 'form-data';
 export declare class ChatwootClient {
     private client;
     private config;
@@ -14,6 +15,7 @@ export declare class ChatwootClient {
     put<T>(path: string, data?: Record<string, unknown>): Promise<T>;
     patch<T>(path: string, data?: Record<string, unknown>): Promise<T>;
     delete<T>(path: string): Promise<T>;
+    postFormData<T>(path: string, formData: FormData): Promise<T>;
     private handleError;
     accountPath(path: string): string;
     platformPath(path: string): string;

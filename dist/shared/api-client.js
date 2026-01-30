@@ -82,6 +82,21 @@ export class ChatwootClient {
             throw this.handleError(error);
         }
     }
+    // Upload file using multipart/form-data
+    async postFormData(path, formData) {
+        try {
+            const response = await this.client.post(path, formData, {
+                headers: {
+                    ...formData.getHeaders(),
+                    'api_access_token': this.config.apiKey,
+                },
+            });
+            return response.data;
+        }
+        catch (error) {
+            throw this.handleError(error);
+        }
+    }
     handleError(error) {
         if (error instanceof AxiosError) {
             const message = error.response?.data?.message || error.response?.data?.error || error.message;

@@ -122,6 +122,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       }
 
+      case 'get_contact_appointments': {
+        const contactId = args?.contact_id as number;
+        result = await client.get(
+          client.accountPath(`/contacts/${contactId}/appointments`)
+        );
+        break;
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }

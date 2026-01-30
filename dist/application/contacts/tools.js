@@ -192,5 +192,19 @@ export const contactTools = [
             },
         },
     },
+    {
+        name: 'get_contact_appointments',
+        description: 'Get all appointments for a specific contact',
+        inputSchema: {
+            type: 'object',
+            required: ['contact_id'],
+            properties: {
+                contact_id: {
+                    type: 'number',
+                    description: 'ID of the contact',
+                },
+            },
+        },
+    },
 ];
 //# sourceMappingURL=tools.js.map

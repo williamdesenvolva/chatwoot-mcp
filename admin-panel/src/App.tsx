@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import TokensPage from './pages/TokensPage';
 import UsersPage from './pages/UsersPage';
 import AuditPage from './pages/AuditPage';
+import ToolsPage from './pages/ToolsPage';
 import Layout from './components/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -12,8 +13,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
       </div>
     );
   }
@@ -39,6 +40,7 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="tokens" element={<TokensPage />} />
+        <Route path="tools" element={<ToolsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="audit" element={<AuditPage />} />
       </Route>

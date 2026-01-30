@@ -6,12 +6,13 @@ import { authService } from './services/auth.service.js';
 import { userService } from './services/user.service.js';
 import { tokenService } from './services/token.service.js';
 import { auditService } from './services/audit.service.js';
+import { toolInstructionService } from './services/tool-instruction.service.js';
 import { validateAdminSession, requireRole, extractPathParams, parseQueryString, sendJson, sendError, } from './middleware/auth.middleware.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Static file serving for admin panel
 const ADMIN_PANEL_DIR = path.join(__dirname, '../../admin-panel/dist');
-export async function handleAdminRoute(req, res, pathname, body) {
+export async function handleAdminRoute(req, res, pathname, body, mcpTools = []) {
     const method = req.method?.toUpperCase() || 'GET';
     const url = new URL(pathname, 'http://localhost');
     const query = parseQueryString(url.search.substring(1));
@@ -278,6 +279,69 @@ export async function handleAdminRoute(req, res, pathname, body) {
         sendJson(res, stats);
         return true;
     }
+    // ========== TOOLS ROUTES ==========
+    // GET /admin/tools - List all tools with custom instructions
+    if (pathname === '/admin/tools' && method === 'GET') {
+        try {
+            const tools = await toolInstructionService.getAllToolsWithInstructions(mcpTools);
+            sendJson(res, { data: tools });
+        }
+        catch (error) {
+            sendError(res, error.message || 'Failed to get tools', 500);
+        }
+        return true;
+    }
+    // GET /admin/tools/:name - Get a specific tool with instruction
+    params = extractPathParams('/admin/tools/:name', pathname);
+    if (params && method === 'GET') {
+        try {
+            const tool = await toolInstructionService.getToolWithInstruction(params.name, mcpTools);
+            if (!tool) {
+                sendError(res, 'Tool not found', 404);
+                return true;
+            }
+            sendJson(res, { data: tool });
+        }
+        catch (error) {
+            sendError(res, error.message || 'Failed to get tool', 500);
+        }
+        return true;
+    }
+    // PUT /admin/tools/:name - Update tool instruction
+    params = extractPathParams('/admin/tools/:name', pathname);
+    if (params && method === 'PUT') {
+        try {
+            // Verify tool exists
+            const existingTool = mcpTools.find((t) => t.name === params.name);
+            if (!existingTool) {
+                sendError(res, 'Tool not found', 404);
+                return true;
+            }
+            const result = await toolInstructionService.upsertInstruction(params.name, body, user.id, ipAddress, userAgent);
+            sendJson(res, { data: result });
+        }
+        catch (error) {
+            sendError(res, error.message || 'Failed to update tool instruction', 400);
+        }
+        return true;
+    }
+    // DELETE /admin/tools/:name - Reset tool to default (delete custom instruction)
+    params = extractPathParams('/admin/tools/:name', pathname);
+    if (params && method === 'DELETE') {
+        try {
+            const deleted = await toolInstructionService.deleteInstruction(params.name, user.id, ipAddress, userAgent);
+            if (!deleted) {
+                // Not an error - tool might not have custom instruction
+                sendJson(res, { success: true, message: 'No custom instruction to delete' });
+                return true;
+            }
+            sendJson(res, { success: true });
+        }
+        catch (error) {
+            sendError(res, error.message || 'Failed to reset tool instruction', 400);
+        }
+        return true;
+    }
     // API route not found
     return false;
 }
@@ -318,5 +382,6 @@ function serveStaticFile(res, pathname) {
 // Re-export services for use in http-server.ts
 export { tokenService } from './services/token.service.js';
 export { auditService } from './services/audit.service.js';
+export { toolInstructionService } from './services/tool-instruction.service.js';
 export { initializeDatabase } from './database/connection.js';
 //# sourceMappingURL=index.js.map

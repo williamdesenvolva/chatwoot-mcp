@@ -8,10 +8,12 @@ services:
     ports:
       - "3002:3001"
     environment:
-      - CHATWOOT_API_URL=http://chatwoot-rails:3000
+      - CHATWOOT_API_URL=http://chatwoot-rails-1:3000
       - CHATWOOT_API_KEY=${CHATWOOT_API_KEY:-u4oGsvR1TLjLCMNn5ETBcF8r}
       - CHATWOOT_ACCOUNT_ID=${CHATWOOT_ACCOUNT_ID:-1}
       - MCP_API_KEY=${MCP_API_KEY:-chatwoot-mcp-2026-secure-key}
+      # Captain JWT token secret (must match Rails secret_key_base or MCP_TOKEN_SECRET)
+      - MCP_TOKEN_SECRET=${MCP_TOKEN_SECRET:-d3v3l0pm3nt_s3cr3t_k3y_b4s3_f0r_ch4tw00t_l0c4l_t3st1ng_0nly}
       - CORS_ORIGINS=http://72.61.43.177:3000,http://chat.desenvolva.tech
       - PORT=3001
       # Admin Panel Database

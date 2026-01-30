@@ -25,6 +25,7 @@
     "start:account-agentbots": "node dist/application/account-agentbots/index.js",
     "start:specialists": "node dist/application/specialists/index.js",
     "start:appointments": "node dist/application/appointments/index.js",
+    "start:waitlist": "node dist/application/waitlist/index.js",
     "start:reports": "node dist/application/reports/index.js",
     "start:profile": "node dist/application/profile/index.js",
     "start:help-center": "node dist/application/help-center/index.js",
@@ -45,6 +46,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "form-data": "^4.0.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.17.1",
     "zod": "^3.23.0"

@@ -8,6 +8,7 @@ import { authService } from './services/auth.service.js';
 import { userService } from './services/user.service.js';
 import { tokenService } from './services/token.service.js';
 import { auditService } from './services/audit.service.js';
+import { toolInstructionService, type McpTool } from './services/tool-instruction.service.js';
 import {
   validateAdminSession,
   requireRole,
@@ -28,7 +29,8 @@ export async function handleAdminRoute(
   req: IncomingMessage,
   res: ServerResponse,
   pathname: string,
-  body: any
+  body: any,
+  mcpTools: McpTool[] = []
 ): Promise<boolean> {
   const method = req.method?.toUpperCase() || 'GET';
   const url = new URL(pathname, 'http://localhost');
@@ -320,6 +322,82 @@ export async function handleAdminRoute(
     return true;
   }
 
+  // ========== TOOLS ROUTES ==========
+
+  // GET /admin/tools - List all tools with custom instructions
+  if (pathname === '/admin/tools' && method === 'GET') {
+    try {
+      const tools = await toolInstructionService.getAllToolsWithInstructions(mcpTools);
+      sendJson(res, { data: tools });
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to get tools', 500);
+    }
+    return true;
+  }
+
+  // GET /admin/tools/:name - Get a specific tool with instruction
+  params = extractPathParams('/admin/tools/:name', pathname);
+  if (params && method === 'GET') {
+    try {
+      const tool = await toolInstructionService.getToolWithInstruction(params.name, mcpTools);
+      if (!tool) {
+        sendError(res, 'Tool not found', 404);
+        return true;
+      }
+      sendJson(res, { data: tool });
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to get tool', 500);
+    }
+    return true;
+  }
+
+  // PUT /admin/tools/:name - Update tool instruction
+  params = extractPathParams('/admin/tools/:name', pathname);
+  if (params && method === 'PUT') {
+    try {
+      // Verify tool exists
+      const existingTool = mcpTools.find((t) => t.name === params!.name);
+      if (!existingTool) {
+        sendError(res, 'Tool not found', 404);
+        return true;
+      }
+
+      const result = await toolInstructionService.upsertInstruction(
+        params.name,
+        body,
+        user.id,
+        ipAddress,
+        userAgent
+      );
+      sendJson(res, { data: result });
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to update tool instruction', 400);
+    }
+    return true;
+  }
+
+  // DELETE /admin/tools/:name - Reset tool to default (delete custom instruction)
+  params = extractPathParams('/admin/tools/:name', pathname);
+  if (params && method === 'DELETE') {
+    try {
+      const deleted = await toolInstructionService.deleteInstruction(
+        params.name,
+        user.id,
+        ipAddress,
+        userAgent
+      );
+      if (!deleted) {
+        // Not an error - tool might not have custom instruction
+        sendJson(res, { success: true, message: 'No custom instruction to delete' });
+        return true;
+      }
+      sendJson(res, { success: true });
+    } catch (error: any) {
+      sendError(res, error.message || 'Failed to reset tool instruction', 400);
+    }
+    return true;
+  }
+
   // API route not found
   return false;
 }
@@ -367,4 +445,5 @@ function serveStaticFile(res: ServerResponse, pathname: string): boolean {
 // Re-export services for use in http-server.ts
 export { tokenService } from './services/token.service.js';
 export { auditService } from './services/audit.service.js';
+export { toolInstructionService } from './services/tool-instruction.service.js';
 export { initializeDatabase } from './database/connection.js';
