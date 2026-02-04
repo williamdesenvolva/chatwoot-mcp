@@ -637,6 +637,149 @@ A entrada volta para "pending" e o próximo na fila será notificado.`,
       },
     },
   },
+
+  // === AI TASKS (TAREFAS DE IA) ===
+  {
+    name: 'list_ai_task_templates',
+    description: 'Lista todos os templates de tarefas de IA disponíveis. Use para descobrir quais tarefas de IA podem ser executadas.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        category: { type: 'string', description: 'Filtrar por categoria (opcional)' },
+        active: { type: 'boolean', description: 'Filtrar apenas ativos (opcional, default: true)' },
+      },
+    },
+  },
+  {
+    name: 'get_ai_task_template',
+    description: 'Obtém detalhes de um template de tarefa de IA, incluindo campos do formulário e configurações',
+    inputSchema: {
+      type: 'object',
+      required: ['template_id'],
+      properties: {
+        template_id: { type: 'number', description: 'ID do template' },
+      },
+    },
+  },
+  {
+    name: 'execute_ai_task',
+    description: 'Executa uma tarefa de IA. Preencha os campos conforme definido no template.',
+    inputSchema: {
+      type: 'object',
+      required: ['template_id', 'input_data'],
+      properties: {
+        template_id: { type: 'number', description: 'ID do template de tarefa' },
+        input_data: { type: 'object', description: 'Dados de entrada conforme campos do template' },
+        conversation_id: { type: 'number', description: 'ID da conversa (opcional, para contexto)' },
+        contact_id: { type: 'number', description: 'ID do contato (opcional, para contexto)' },
+      },
+    },
+  },
+  {
+    name: 'get_ai_task_execution',
+    description: 'Obtém o resultado de uma execução de tarefa de IA',
+    inputSchema: {
+      type: 'object',
+      required: ['execution_id'],
+      properties: {
+        execution_id: { type: 'number', description: 'ID da execução' },
+      },
+    },
+  },
+  {
+    name: 'list_ai_task_executions',
+    description: 'Lista execuções de tarefas de IA com filtros',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        template_id: { type: 'number', description: 'Filtrar por template (opcional)' },
+        status: { type: 'string', enum: ['pending', 'processing', 'completed', 'failed'], description: 'Filtrar por status (opcional)' },
+        page: { type: 'number', description: 'Página (default: 1)' },
+      },
+    },
+  },
+  {
+    name: 'send_ai_task_feedback',
+    description: 'Envia feedback sobre uma execução de tarefa de IA',
+    inputSchema: {
+      type: 'object',
+      required: ['execution_id', 'feedback'],
+      properties: {
+        execution_id: { type: 'number', description: 'ID da execução' },
+        feedback: { type: 'string', enum: ['positive', 'negative'], description: 'Tipo de feedback' },
+        comment: { type: 'string', description: 'Comentário adicional (opcional)' },
+      },
+    },
+  },
+
+  // === PROCESSES (PROCESSOS/WORKFLOWS) ===
+  {
+    name: 'list_processes',
+    description: 'Lista todos os processos (workflows) da conta. Processos são fluxos de trabalho com etapas.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', description: 'Filtrar por status (opcional)' },
+        page: { type: 'number', description: 'Página (default: 1)' },
+      },
+    },
+  },
+  {
+    name: 'get_process',
+    description: 'Obtém detalhes de um processo específico, incluindo etapas e cards',
+    inputSchema: {
+      type: 'object',
+      required: ['process_id'],
+      properties: {
+        process_id: { type: 'number', description: 'ID do processo' },
+      },
+    },
+  },
+  {
+    name: 'create_process',
+    description: 'Cria um novo processo a partir de um template',
+    inputSchema: {
+      type: 'object',
+      required: ['template_id', 'name'],
+      properties: {
+        template_id: { type: 'number', description: 'ID do template de processo' },
+        name: { type: 'string', description: 'Nome do processo' },
+        description: { type: 'string', description: 'Descrição (opcional)' },
+      },
+    },
+  },
+  {
+    name: 'list_process_templates',
+    description: 'Lista todos os templates de processos disponíveis',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'get_process_cards',
+    description: 'Lista todos os cards de processos (itens em andamento em workflows)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        process_id: { type: 'number', description: 'Filtrar por processo (opcional)' },
+        stage_id: { type: 'number', description: 'Filtrar por etapa (opcional)' },
+        contact_id: { type: 'number', description: 'Filtrar por contato (opcional)' },
+      },
+    },
+  },
+  {
+    name: 'move_process_card',
+    description: 'Move um card de processo para outra etapa do workflow',
+    inputSchema: {
+      type: 'object',
+      required: ['card_id', 'stage_id'],
+      properties: {
+        card_id: { type: 'number', description: 'ID do card' },
+        stage_id: { type: 'number', description: 'ID da nova etapa' },
+      },
+    },
+  },
 ];
 
 // Executa uma tool MCP
@@ -1037,6 +1180,83 @@ async function executeMcpTool(name: string, args: Record<string, unknown>): Prom
 
       return await client.patch(client.accountPath(`/specialists/${specialistId}/waitlist_notification_setting`), {
         waitlist_notification_setting: settingData
+      });
+    }
+
+    // AI Tasks
+    case 'list_ai_task_templates': {
+      const params: Record<string, unknown> = {};
+      if (args.category) params.category = args.category;
+      if (args.active !== undefined) params.active = args.active;
+      return await client.get(client.accountPath('/ai_task_templates'), params);
+    }
+
+    case 'get_ai_task_template':
+      return await client.get(client.accountPath(`/ai_task_templates/${args.template_id}`));
+
+    case 'execute_ai_task': {
+      const executionData: Record<string, unknown> = {
+        ai_task_template_id: args.template_id,
+        input_data: args.input_data,
+      };
+      if (args.conversation_id) executionData.conversation_id = args.conversation_id;
+      if (args.contact_id) executionData.contact_id = args.contact_id;
+      return await client.post(client.accountPath('/ai_task_executions'), executionData);
+    }
+
+    case 'get_ai_task_execution':
+      return await client.get(client.accountPath(`/ai_task_executions/${args.execution_id}`));
+
+    case 'list_ai_task_executions': {
+      const params: Record<string, unknown> = {};
+      if (args.template_id) params.ai_task_template_id = args.template_id;
+      if (args.status) params.status = args.status;
+      if (args.page) params.page = args.page;
+      return await client.get(client.accountPath('/ai_task_executions'), params);
+    }
+
+    case 'send_ai_task_feedback': {
+      const feedbackData: Record<string, unknown> = {
+        feedback: args.feedback,
+      };
+      if (args.comment) feedbackData.feedback_comment = args.comment;
+      return await client.post(client.accountPath(`/ai_task_executions/${args.execution_id}/feedback`), feedbackData);
+    }
+
+    // Processes
+    case 'list_processes': {
+      const params: Record<string, unknown> = {};
+      if (args.status) params.status = args.status;
+      if (args.page) params.page = args.page;
+      return await client.get(client.accountPath('/processes'), params);
+    }
+
+    case 'get_process':
+      return await client.get(client.accountPath(`/processes/${args.process_id}`));
+
+    case 'create_process': {
+      const processData: Record<string, unknown> = {
+        process_template_id: args.template_id,
+        name: args.name,
+      };
+      if (args.description) processData.description = args.description;
+      return await client.post(client.accountPath('/processes'), { process: processData });
+    }
+
+    case 'list_process_templates':
+      return await client.get(client.accountPath('/processes/templates'));
+
+    case 'get_process_cards': {
+      const params: Record<string, unknown> = {};
+      if (args.process_id) params.process_id = args.process_id;
+      if (args.stage_id) params.stage_id = args.stage_id;
+      if (args.contact_id) params.contact_id = args.contact_id;
+      return await client.get(client.accountPath('/processes/all_cards'), params);
+    }
+
+    case 'move_process_card': {
+      return await client.patch(client.accountPath(`/process_cards/${args.card_id}`), {
+        process_card: { stage_id: args.stage_id }
       });
     }
 
